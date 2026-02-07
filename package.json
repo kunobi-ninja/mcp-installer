@@ -1,0 +1,46 @@
+{
+  "name": "@kunobi/mcp-installer",
+  "version": "0.0.0",
+  "description": "Reusable MCP server installer — interactive CLI to register servers with AI clients",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kunobi-ninja/mcp-installer.git"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "mcp-installer": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "test": "vitest run --coverage",
+    "dev:watch": "rollup -c --watch",
+    "cli": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.14",
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/node": "^24.10.11",
+    "@vitest/coverage-v8": "^4.0.18",
+    "rollup": "^4.57.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

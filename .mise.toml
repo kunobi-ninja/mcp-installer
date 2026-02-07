@@ -1,0 +1,6 @@
+[tools]
+node = "24"
+pnpm = "latest"
+
+[tasks.ci_postinstall]
+run = "pnpm install --frozen-lockfile"
