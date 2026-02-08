@@ -11,13 +11,14 @@ concurrency:
   cancel-in-progress: true
 jobs:
   checks:
-    uses: zondax/_workflows/.github/workflows/_checks-ts.yaml@v5
+    uses: zondax/_workflows/.github/workflows/_checks-ts.yaml@v6
     with:
       format_command: "check"
       enable_linting: false
+      runs_on: "ubuntu-latest"
   publish:
     needs: [checks]
-    uses: zondax/_workflows/.github/workflows/_publish-npm.yaml@v5
+    uses: zondax/_workflows/.github/workflows/_publish-npm.yaml@v6
     permissions:
       contents: read
       id-token: write
