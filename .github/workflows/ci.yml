@@ -12,6 +12,10 @@ concurrency:
 jobs:
   checks:
     uses: zondax/_workflows/.github/workflows/_checks-ts.yaml@v6
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
     with:
       format_command: "check"
       enable_linting: false
