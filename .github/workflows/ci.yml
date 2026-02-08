@@ -19,6 +19,7 @@ jobs:
     with:
       format_command: "check"
       enable_linting: false
+      enable_coverage: false
       runs_on: "ubuntu-latest"
   publish:
     needs: [checks]
