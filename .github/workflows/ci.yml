@@ -4,17 +4,25 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [created]
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v3
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run check
-      - run: pnpm run typecheck
-      - run: pnpm run build
-      - run: pnpm run test
+  checks:
+    uses: zondax/_workflows/.github/workflows/_checks-ts.yaml@v5
+    with:
+      format_command: "check"
+      enable_linting: false
+  publish:
+    needs: [checks]
+    uses: zondax/_workflows/.github/workflows/_publish-npm.yaml@v5
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      timeout_minutes: 15
+      dry_run: ${{ github.event_name != 'release' }}
+      github_app_auth: false
+      npm_scope: "@kunobi"
