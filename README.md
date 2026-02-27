@@ -156,6 +156,21 @@ for (const config of list()) {
 }
 ```
 
+### `checkForUpdate(packageName, currentVersion, timeoutMs?): Promise<UpdateInfo | null>`
+
+Checks the npm registry for a newer version. Returns `null` on timeout or error — safe to call without `try/catch`.
+
+```typescript
+import { checkForUpdate } from '@kunobi/mcp-installer';
+
+const update = await checkForUpdate('@kunobi/mcp', '0.0.3');
+if (update?.updateAvailable) {
+  console.log(`Update available: ${update.current} → ${update.latest}`);
+}
+```
+
+Useful for non-blocking version checks at MCP server startup. Default timeout is 3 seconds.
+
 ### `CLIENTS`
 
 The client registry is exported for advanced use cases:
