@@ -8,7 +8,7 @@ All paths are resolved automatically based on the current OS.
 
 | Client | Format | Project scope | User scope (macOS) | User scope (Linux) | User scope (Windows) |
 |---|---|---|---|---|---|
-| Claude Code | JSON | `.mcp.json` | `~/.claude/.mcp.json` | `~/.claude/.mcp.json` | `~/.claude/.mcp.json` |
+| Claude Code | JSON | `.mcp.json` | `~/.claude.json` | `~/.claude.json` | `~/.claude.json` |
 | Claude Desktop | JSON | — | `~/Library/Application Support/Claude/claude_desktop_config.json` | `~/.config/Claude/claude_desktop_config.json` | `%APPDATA%/Claude/claude_desktop_config.json` |
 | Cursor | JSON | `.cursor/mcp.json` | `~/.cursor/mcp.json` | `~/.cursor/mcp.json` | `~/.cursor/mcp.json` |
 | Windsurf | JSON | `.windsurf/mcp.json` | `~/.codeium/windsurf/mcp_config.json` | `~/.codeium/windsurf/mcp_config.json` | `~/.codeium/windsurf/mcp_config.json` |
@@ -33,7 +33,7 @@ npx @kunobi/mcp-installer uninstall <name>
 $ npx @kunobi/mcp-installer list
 
 User scope
-  Claude Code (~/.claude/.mcp.json)
+  Claude Code (~/.claude.json)
     ngage                http https://ngage.int-dev.zondax.io/mcp
     clickup              npx -y mcp-remote https://mcp.clickup.com/mcp
   Claude Desktop (~/Library/Application Support/Claude/claude_desktop_config.json)

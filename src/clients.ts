@@ -50,7 +50,9 @@ export const CLIENTS: ClientDef[] = [
     serverKey: 'mcpServers',
     projectPath: (cwd) => join(cwd, '.mcp.json'),
     userPath: () =>
-      join(process.env.CLAUDE_CONFIG_DIR || join(home, '.claude'), '.mcp.json'),
+      process.env.CLAUDE_CONFIG_DIR
+        ? join(process.env.CLAUDE_CONFIG_DIR, '.mcp.json')
+        : join(home, '.claude.json'),
     detectInstalled: () =>
       existsSync(process.env.CLAUDE_CONFIG_DIR || join(home, '.claude')),
   },

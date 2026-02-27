@@ -79,7 +79,7 @@ describe('CLIENTS', () => {
   describe('user paths', () => {
     it('Claude Code → ~/.claude.json', () => {
       const client = getClient('Claude Code');
-      expect(client.userPath?.()).toBe(join(home, '.claude', '.mcp.json'));
+      expect(client.userPath?.()).toBe(join(home, '.claude.json'));
     });
 
     it('Cursor → ~/.cursor/mcp.json', () => {
