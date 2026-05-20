@@ -18,7 +18,7 @@ All paths are resolved automatically based on the current OS.
 
 Environment variable overrides: `CLAUDE_CONFIG_DIR` (Claude Code detection), `CODEX_HOME` (Codex CLI paths), `COPILOT_HOME` (Copilot CLI paths).
 
-GitHub Copilot CLI entries are written with `type: "local"` and `tools: ["*"]`, which its config schema requires.
+GitHub Copilot CLI entries are written with `type: "local"` and `tools: ["*"]` to match Copilot CLI's expected config shape.
 
 Installed clients are auto-detected and pre-selected in the prompt.
 
