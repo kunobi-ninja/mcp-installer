@@ -74,7 +74,7 @@ export async function install(entry: McpServerEntry): Promise<void> {
   if (p.isCancel(selected)) cancelled();
 
   const cwd = process.cwd();
-  const serverEntry: ServerEntry = {
+  const baseEntry: ServerEntry = {
     command: entry.command,
     args: entry.args,
     ...(entry.env && { env: entry.env }),
@@ -87,10 +87,14 @@ export async function install(entry: McpServerEntry): Promise<void> {
       scope === 'project' ? client.projectPath?.(cwd) : client.userPath?.();
     if (!configPath) continue;
 
+    const finalEntry: ServerEntry = client.entryDefaults
+      ? { ...client.entryDefaults, ...baseEntry }
+      : baseEntry;
+
     const result =
       client.format === 'json'
-        ? writeJsonConfig(configPath, client.serverKey, entry.name, serverEntry)
-        : writeTomlConfig(configPath, entry.name, serverEntry);
+        ? writeJsonConfig(configPath, client.serverKey, entry.name, finalEntry)
+        : writeTomlConfig(configPath, entry.name, finalEntry);
 
     p.log.success(
       `${result.action === 'created' ? 'Wrote' : 'Updated'} ${result.path} (${client.name})`,

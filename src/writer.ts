@@ -5,6 +5,10 @@ export interface ServerEntry {
   command: string;
   args: string[];
   env?: Record<string, string>;
+  /** Transport type tag required by some clients (e.g. Copilot CLI: "local"). */
+  type?: string;
+  /** Per-server tool allowlist read by some clients (e.g. Copilot CLI). "*" allows all. */
+  tools?: string[];
 }
 
 export interface WriteResult {

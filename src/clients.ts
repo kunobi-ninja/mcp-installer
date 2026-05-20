@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
+import type { ServerEntry } from './writer.js';
 
 export interface ClientDef {
   /** Display name shown in prompts */
@@ -15,6 +16,11 @@ export interface ClientDef {
   userPath: (() => string) | null;
   /** Returns true if the client appears to be installed */
   detectInstalled: () => boolean;
+  /**
+   * Extra fields merged into the server entry when writing for this client.
+   * Caller-supplied entry fields (command/args/env) take precedence.
+   */
+  entryDefaults?: Partial<ServerEntry>;
 }
 
 const home = homedir();
@@ -108,5 +114,19 @@ export const CLIENTS: ClientDef[] = [
     projectPath: (cwd) => join(cwd, '.codex', 'config.toml'),
     userPath: () => join(codexHome(), 'config.toml'),
     detectInstalled: () => existsSync(codexHome()),
+  },
+  {
+    name: 'GitHub Copilot CLI',
+    format: 'json',
+    serverKey: 'mcpServers',
+    // Copilot CLI does not natively support a project-scoped config file.
+    projectPath: null,
+    userPath: () =>
+      process.env.COPILOT_HOME
+        ? join(process.env.COPILOT_HOME, 'mcp-config.json')
+        : join(home, '.copilot', 'mcp-config.json'),
+    detectInstalled: () =>
+      existsSync(process.env.COPILOT_HOME || join(home, '.copilot')),
+    entryDefaults: { type: 'local', tools: ['*'] },
   },
 ];

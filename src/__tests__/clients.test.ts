@@ -12,8 +12,8 @@ function getClient(name: string): ClientDef {
 }
 
 describe('CLIENTS', () => {
-  it('has 6 client definitions', () => {
-    expect(CLIENTS).toHaveLength(6);
+  it('has 7 client definitions', () => {
+    expect(CLIENTS).toHaveLength(7);
   });
 
   it('each client has required fields', () => {
@@ -39,6 +39,16 @@ describe('CLIENTS', () => {
   it('Claude Desktop has no project path', () => {
     const desktop = getClient('Claude Desktop');
     expect(desktop.projectPath).toBeNull();
+  });
+
+  it('GitHub Copilot CLI has no project path (not natively supported)', () => {
+    const copilot = getClient('GitHub Copilot CLI');
+    expect(copilot.projectPath).toBeNull();
+  });
+
+  it('GitHub Copilot CLI carries entryDefaults for type + tools', () => {
+    const copilot = getClient('GitHub Copilot CLI');
+    expect(copilot.entryDefaults).toEqual({ type: 'local', tools: ['*'] });
   });
 
   describe('project paths', () => {
@@ -73,6 +83,36 @@ describe('CLIENTS', () => {
       expect(client.projectPath?.(cwd)).toBe(
         join(cwd, '.codex', 'config.toml'),
       );
+    });
+  });
+
+  describe('user paths — additional clients', () => {
+    it('GitHub Copilot CLI → ~/.copilot/mcp-config.json by default', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      delete process.env.COPILOT_HOME;
+      try {
+        const client = getClient('GitHub Copilot CLI');
+        expect(client.userPath?.()).toBe(
+          join(home, '.copilot', 'mcp-config.json'),
+        );
+      } finally {
+        if (prevCopilotHome !== undefined)
+          process.env.COPILOT_HOME = prevCopilotHome;
+      }
+    });
+
+    it('GitHub Copilot CLI honors COPILOT_HOME', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      process.env.COPILOT_HOME = '/tmp/custom-copilot';
+      try {
+        const client = getClient('GitHub Copilot CLI');
+        expect(client.userPath?.()).toBe(
+          join('/tmp/custom-copilot', 'mcp-config.json'),
+        );
+      } finally {
+        if (prevCopilotHome === undefined) delete process.env.COPILOT_HOME;
+        else process.env.COPILOT_HOME = prevCopilotHome;
+      }
     });
   });
 

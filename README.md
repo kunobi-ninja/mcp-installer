@@ -14,8 +14,11 @@ All paths are resolved automatically based on the current OS.
 | Windsurf | JSON | `.windsurf/mcp.json` | `~/.codeium/windsurf/mcp_config.json` | `~/.codeium/windsurf/mcp_config.json` | `~/.codeium/windsurf/mcp_config.json` |
 | Gemini CLI | JSON | `.gemini/settings.json` | `~/.gemini/settings.json` | `~/.gemini/settings.json` | `~/.gemini/settings.json` |
 | Codex CLI | TOML | `.codex/config.toml` | `~/.codex/config.toml` | `~/.codex/config.toml` | `%CODEX_HOME%/config.toml` |
+| GitHub Copilot CLI | JSON | — | `~/.copilot/mcp-config.json` | `~/.copilot/mcp-config.json` | `~/.copilot/mcp-config.json` |
 
-Environment variable overrides: `CLAUDE_CONFIG_DIR` (Claude Code detection), `CODEX_HOME` (Codex CLI paths).
+Environment variable overrides: `CLAUDE_CONFIG_DIR` (Claude Code detection), `CODEX_HOME` (Codex CLI paths), `COPILOT_HOME` (Copilot CLI paths).
+
+GitHub Copilot CLI entries are written with `type: "local"` and `tools: ["*"]`, which its config schema requires.
 
 Installed clients are auto-detected and pre-selected in the prompt.
 

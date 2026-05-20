@@ -115,6 +115,24 @@ describe('writeJsonConfig', () => {
 
     expect(existsSync(path)).toBe(true);
   });
+
+  it('writes type and tools fields when present', () => {
+    const path = join(dir, 'with-type.json');
+    writeJsonConfig(path, 'mcpServers', 'kunobi', {
+      command: 'npx',
+      args: ['@kunobi/mcp'],
+      type: 'local',
+      tools: ['*'],
+    });
+
+    const config = JSON.parse(readFileSync(path, 'utf8'));
+    expect(config.mcpServers.kunobi).toEqual({
+      command: 'npx',
+      args: ['@kunobi/mcp'],
+      type: 'local',
+      tools: ['*'],
+    });
+  });
 });
 
 // ── JSON remove ──────────────────────────────────────────────────────────────
