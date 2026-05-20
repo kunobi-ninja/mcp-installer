@@ -5,9 +5,9 @@ export interface ServerEntry {
   command: string;
   args: string[];
   env?: Record<string, string>;
-  /** Transport type tag required by some clients (e.g. Copilot CLI: "local"). */
-  type?: string;
-  /** Per-server tool allowlist read by some clients (e.g. Copilot CLI). "*" allows all. */
+  /** Transport tag written verbatim. Only used by clients whose schema requires it. */
+  type?: 'local';
+  /** Tool allowlist written verbatim. "*" means all tools. */
   tools?: string[];
 }
 
@@ -19,6 +19,17 @@ export interface WriteResult {
 export interface RemoveResult {
   path: string;
   action: 'removed' | 'not_found' | 'file_missing';
+}
+
+function parseJsonOrThrow(raw: string, path: string): Record<string, unknown> {
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Failed to parse existing config at ${path}: ${reason}. Fix or delete the file and retry.`,
+    );
+  }
 }
 
 // ── JSON ─────────────────────────────────────────────────────────────────────
@@ -35,7 +46,7 @@ export function writeJsonConfig(
   const existed = existsSync(path);
   if (existed) {
     const raw = readFileSync(path, 'utf8').trim();
-    if (raw) config = JSON.parse(raw) as Record<string, unknown>;
+    if (raw) config = parseJsonOrThrow(raw, path);
   }
 
   const servers = (config[serverKey] ?? {}) as Record<string, unknown>;
@@ -56,7 +67,7 @@ export function removeJsonConfig(
   const raw = readFileSync(path, 'utf8').trim();
   if (!raw) return { path, action: 'not_found' };
 
-  const config = JSON.parse(raw) as Record<string, unknown>;
+  const config = parseJsonOrThrow(raw, path);
   const servers = config[serverKey] as Record<string, unknown> | undefined;
   if (!servers || !(name in servers)) return { path, action: 'not_found' };
 
@@ -82,6 +93,11 @@ function tomlValue(v: unknown): string {
 }
 
 function buildTomlSection(name: string, entry: ServerEntry): string {
+  if (entry.type !== undefined || entry.tools !== undefined) {
+    throw new Error(
+      `TOML writer does not emit 'type' or 'tools' fields (JSON-only). Got type=${JSON.stringify(entry.type)}, tools=${JSON.stringify(entry.tools)}.`,
+    );
+  }
   const lines = [`[mcp_servers.${name}]`];
   lines.push(`command = ${tomlValue(entry.command)}`);
   lines.push(`args = ${tomlValue(entry.args)}`);

@@ -133,6 +133,17 @@ describe('writeJsonConfig', () => {
       tools: ['*'],
     });
   });
+
+  it('throws a descriptive error when existing JSON is corrupt', () => {
+    const path = join(dir, 'corrupt.json');
+    writeFileSync(path, '{ not valid json');
+    expect(() =>
+      writeJsonConfig(path, 'mcpServers', 'kunobi', {
+        command: 'npx',
+        args: ['@kunobi/mcp'],
+      }),
+    ).toThrow(/Failed to parse existing config at .*corrupt\.json/);
+  });
 });
 
 // ── JSON remove ──────────────────────────────────────────────────────────────
@@ -193,6 +204,14 @@ describe('removeJsonConfig', () => {
     );
     expect(result.action).toBe('file_missing');
   });
+
+  it('throws a descriptive error when existing JSON is corrupt', () => {
+    const path = join(dir, 'corrupt-remove.json');
+    writeFileSync(path, '{ not valid json');
+    expect(() => removeJsonConfig(path, 'mcpServers', 'kunobi')).toThrow(
+      /Failed to parse existing config at .*corrupt-remove\.json/,
+    );
+  });
 });
 
 // ── TOML write ───────────────────────────────────────────────────────────────
@@ -251,6 +270,28 @@ describe('writeTomlConfig', () => {
     const content = readFileSync(path, 'utf8');
     expect(content).toContain('[mcp_servers.kunobi.env]');
     expect(content).toContain('API_KEY = "secret"');
+  });
+
+  it('throws when entry carries a JSON-only type field', () => {
+    const path = join(dir, 'rejected-type.toml');
+    expect(() =>
+      writeTomlConfig(path, 'kunobi', {
+        command: 'npx',
+        args: ['@kunobi/mcp'],
+        type: 'local',
+      }),
+    ).toThrow(/TOML writer does not emit/);
+  });
+
+  it('throws when entry carries a JSON-only tools field', () => {
+    const path = join(dir, 'rejected-tools.toml');
+    expect(() =>
+      writeTomlConfig(path, 'kunobi', {
+        command: 'npx',
+        args: ['@kunobi/mcp'],
+        tools: ['*'],
+      }),
+    ).toThrow(/TOML writer does not emit/);
   });
 });
 

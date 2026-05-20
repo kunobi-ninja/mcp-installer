@@ -1,7 +1,8 @@
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CLIENTS, type ClientDef } from '../clients.js';
+import { CLIENTS, type ClientDef, mergeEntry } from '../clients.js';
+import type { ServerEntry } from '../writer.js';
 
 const home = homedir();
 
@@ -114,6 +115,61 @@ describe('CLIENTS', () => {
         else process.env.COPILOT_HOME = prevCopilotHome;
       }
     });
+
+    it('GitHub Copilot CLI treats COPILOT_HOME="" as unset', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      process.env.COPILOT_HOME = '';
+      try {
+        const client = getClient('GitHub Copilot CLI');
+        expect(client.userPath?.()).toBe(
+          join(home, '.copilot', 'mcp-config.json'),
+        );
+      } finally {
+        if (prevCopilotHome === undefined) delete process.env.COPILOT_HOME;
+        else process.env.COPILOT_HOME = prevCopilotHome;
+      }
+    });
+
+    it('GitHub Copilot CLI treats whitespace-only COPILOT_HOME as unset', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      process.env.COPILOT_HOME = '   ';
+      try {
+        const client = getClient('GitHub Copilot CLI');
+        expect(client.userPath?.()).toBe(
+          join(home, '.copilot', 'mcp-config.json'),
+        );
+      } finally {
+        if (prevCopilotHome === undefined) delete process.env.COPILOT_HOME;
+        else process.env.COPILOT_HOME = prevCopilotHome;
+      }
+    });
+  });
+
+  describe('GitHub Copilot CLI detection', () => {
+    it('detectInstalled returns true when COPILOT_HOME points to an existing dir', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      process.env.COPILOT_HOME = tmpdir();
+      try {
+        expect(getClient('GitHub Copilot CLI').detectInstalled()).toBe(true);
+      } finally {
+        if (prevCopilotHome === undefined) delete process.env.COPILOT_HOME;
+        else process.env.COPILOT_HOME = prevCopilotHome;
+      }
+    });
+
+    it('detectInstalled returns false when COPILOT_HOME points to a missing dir', () => {
+      const prevCopilotHome = process.env.COPILOT_HOME;
+      process.env.COPILOT_HOME = join(
+        tmpdir(),
+        `copilot-missing-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
+      try {
+        expect(getClient('GitHub Copilot CLI').detectInstalled()).toBe(false);
+      } finally {
+        if (prevCopilotHome === undefined) delete process.env.COPILOT_HOME;
+        else process.env.COPILOT_HOME = prevCopilotHome;
+      }
+    });
   });
 
   describe('user paths', () => {
@@ -151,5 +207,69 @@ describe('CLIENTS', () => {
         expect(typeof client.detectInstalled()).toBe('boolean');
       }
     });
+  });
+});
+
+describe('mergeEntry', () => {
+  const base: ServerEntry = {
+    command: 'npx',
+    args: ['@kunobi/mcp'],
+  };
+
+  it('returns base unchanged when no defaults', () => {
+    const merged = mergeEntry(base, undefined);
+    expect(merged).toEqual(base);
+  });
+
+  it('applies type and tools from defaults', () => {
+    const merged = mergeEntry(base, { type: 'local', tools: ['*'] });
+    expect(merged).toEqual({
+      command: 'npx',
+      args: ['@kunobi/mcp'],
+      type: 'local',
+      tools: ['*'],
+    });
+  });
+
+  it('preserves caller env alongside defaults', () => {
+    const baseWithEnv: ServerEntry = {
+      command: 'npx',
+      args: ['@kunobi/mcp'],
+      env: { API_KEY: 'secret' },
+    };
+    const merged = mergeEntry(baseWithEnv, { type: 'local', tools: ['*'] });
+    expect(merged).toEqual({
+      command: 'npx',
+      args: ['@kunobi/mcp'],
+      env: { API_KEY: 'secret' },
+      type: 'local',
+      tools: ['*'],
+    });
+  });
+
+  it('does not mutate the base entry', () => {
+    const snapshot = JSON.stringify(base);
+    mergeEntry(base, { type: 'local', tools: ['*'] });
+    expect(JSON.stringify(base)).toBe(snapshot);
+  });
+
+  it('applies Copilot defaults end-to-end via the CLIENTS table', () => {
+    const copilot = CLIENTS.find((c) => c.name === 'GitHub Copilot CLI');
+    expect(copilot).toBeDefined();
+    const merged = mergeEntry(base, copilot?.entryDefaults);
+    expect(merged.type).toBe('local');
+    expect(merged.tools).toEqual(['*']);
+    expect(merged.command).toBe('npx');
+    expect(merged.args).toEqual(['@kunobi/mcp']);
+  });
+
+  it('does not apply defaults to clients without entryDefaults', () => {
+    const cursor = CLIENTS.find((c) => c.name === 'Cursor');
+    expect(cursor).toBeDefined();
+    expect(cursor?.entryDefaults).toBeUndefined();
+    const merged = mergeEntry(base, cursor?.entryDefaults);
+    expect(merged).toEqual(base);
+    expect(merged).not.toHaveProperty('type');
+    expect(merged).not.toHaveProperty('tools');
   });
 });

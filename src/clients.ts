@@ -17,10 +17,23 @@ export interface ClientDef {
   /** Returns true if the client appears to be installed */
   detectInstalled: () => boolean;
   /**
-   * Extra fields merged into the server entry when writing for this client.
-   * Caller-supplied entry fields (command/args/env) take precedence.
+   * Defaults merged into the server entry when writing for this client.
+   * Restricted to non-caller-owned fields so caller command/args/env always win.
    */
-  entryDefaults?: Partial<ServerEntry>;
+  entryDefaults?: Pick<ServerEntry, 'type' | 'tools'>;
+}
+
+/**
+ * Merge a client's per-server defaults into the base entry.
+ *
+ * Spread order is load-bearing: defaults come first so caller-supplied
+ * fields win on any future overlap.
+ */
+export function mergeEntry(
+  baseEntry: ServerEntry,
+  defaults: ClientDef['entryDefaults'],
+): ServerEntry {
+  return defaults ? { ...defaults, ...baseEntry } : baseEntry;
 }
 
 const home = homedir();
@@ -46,7 +59,11 @@ function claudeDesktopUserPath(): string {
 }
 
 function codexHome(): string {
-  return process.env.CODEX_HOME || join(home, '.codex');
+  return process.env.CODEX_HOME?.trim() || join(home, '.codex');
+}
+
+function copilotHome(): string {
+  return process.env.COPILOT_HOME?.trim() || join(home, '.copilot');
 }
 
 export const CLIENTS: ClientDef[] = [
@@ -121,12 +138,8 @@ export const CLIENTS: ClientDef[] = [
     serverKey: 'mcpServers',
     // Copilot CLI does not natively support a project-scoped config file.
     projectPath: null,
-    userPath: () =>
-      process.env.COPILOT_HOME
-        ? join(process.env.COPILOT_HOME, 'mcp-config.json')
-        : join(home, '.copilot', 'mcp-config.json'),
-    detectInstalled: () =>
-      existsSync(process.env.COPILOT_HOME || join(home, '.copilot')),
+    userPath: () => join(copilotHome(), 'mcp-config.json'),
+    detectInstalled: () => existsSync(copilotHome()),
     entryDefaults: { type: 'local', tools: ['*'] },
   },
 ];

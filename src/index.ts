@@ -1,5 +1,5 @@
 import * as p from '@clack/prompts';
-import { CLIENTS } from './clients.js';
+import { CLIENTS, mergeEntry } from './clients.js';
 import {
   removeJsonConfig,
   removeTomlConfig,
@@ -80,6 +80,7 @@ export async function install(entry: McpServerEntry): Promise<void> {
     ...(entry.env && { env: entry.env }),
   };
 
+  let anyFailed = false;
   for (const clientName of selected) {
     const client = clientsByName.get(clientName);
     if (!client) continue;
@@ -87,21 +88,35 @@ export async function install(entry: McpServerEntry): Promise<void> {
       scope === 'project' ? client.projectPath?.(cwd) : client.userPath?.();
     if (!configPath) continue;
 
-    const finalEntry: ServerEntry = client.entryDefaults
-      ? { ...client.entryDefaults, ...baseEntry }
-      : baseEntry;
+    const finalEntry = mergeEntry(baseEntry, client.entryDefaults);
 
-    const result =
-      client.format === 'json'
-        ? writeJsonConfig(configPath, client.serverKey, entry.name, finalEntry)
-        : writeTomlConfig(configPath, entry.name, finalEntry);
+    try {
+      const result =
+        client.format === 'json'
+          ? writeJsonConfig(
+              configPath,
+              client.serverKey,
+              entry.name,
+              finalEntry,
+            )
+          : writeTomlConfig(configPath, entry.name, finalEntry);
 
-    p.log.success(
-      `${result.action === 'created' ? 'Wrote' : 'Updated'} ${result.path} (${client.name})`,
-    );
+      p.log.success(
+        `${result.action === 'created' ? 'Wrote' : 'Updated'} ${result.path} (${client.name})`,
+      );
+    } catch (err) {
+      anyFailed = true;
+      const reason = err instanceof Error ? err.message : String(err);
+      p.log.error(`Failed to write ${configPath} (${client.name}): ${reason}`);
+    }
   }
 
-  p.outro('Done! Restart your AI client to load the new MCP server.');
+  if (anyFailed) {
+    process.exitCode = 1;
+    p.outro('Done with errors. Some configurations were not written.');
+  } else {
+    p.outro('Done! Restart your AI client to load the new MCP server.');
+  }
 }
 
 // ── Uninstall ────────────────────────────────────────────────────────────────
