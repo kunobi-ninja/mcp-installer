@@ -1,5 +1,6 @@
 import * as p from '@clack/prompts';
 import { CLIENTS, mergeEntry } from './clients.js';
+import { type ClientConfig, list } from './list.js';
 import {
   removeJsonConfig,
   removeTomlConfig,
@@ -11,7 +12,7 @@ import {
 export type { ClientDef } from './clients.js';
 export { CLIENTS } from './clients.js';
 export type { ClientConfig, ServerInfo } from './list.js';
-export { list } from './list.js';
+export { list };
 export type { UpdateInfo } from './update.js';
 export { checkForUpdate } from './update.js';
 
@@ -117,6 +118,69 @@ export async function install(entry: McpServerEntry): Promise<void> {
   } else {
     p.outro('Done! Restart your AI client to load the new MCP server.');
   }
+}
+
+// ── Repin (non-interactive upgrade) ───────────────────────────────────────────
+
+export interface RepinResult {
+  client: string;
+  scope: Scope;
+  path: string;
+  action: 'updated' | 'error';
+  error?: string;
+}
+
+/**
+ * Re-pin an already-installed server entry to new command/args, everywhere it is
+ * currently registered. Non-interactive — intended for `upgrade` flows that swap
+ * a pinned version. Only touches configs that already contain `entry.name`, so it
+ * never registers the server somewhere new. Returns one result per config written.
+ *
+ * `options.configs` lets callers inject configs (tests); defaults to `list(cwd)`.
+ */
+export function repin(
+  entry: McpServerEntry,
+  options: { cwd?: string; configs?: ClientConfig[] } = {},
+): RepinResult[] {
+  const configs = options.configs ?? list(options.cwd);
+  const baseEntry: ServerEntry = {
+    command: entry.command,
+    args: entry.args,
+    ...(entry.env && { env: entry.env }),
+  };
+
+  const results: RepinResult[] = [];
+  for (const cfg of configs) {
+    // Only re-pin where this server is already registered.
+    if (!cfg.servers.some((s) => s.name === entry.name)) continue;
+
+    const client = clientsByName.get(cfg.client);
+    if (!client) continue;
+
+    const finalEntry = mergeEntry(baseEntry, client.entryDefaults);
+    try {
+      const result =
+        client.format === 'json'
+          ? writeJsonConfig(cfg.path, client.serverKey, entry.name, finalEntry)
+          : writeTomlConfig(cfg.path, entry.name, finalEntry);
+      results.push({
+        client: client.name,
+        scope: cfg.scope,
+        path: result.path,
+        action: 'updated',
+      });
+    } catch (err) {
+      results.push({
+        client: client.name,
+        scope: cfg.scope,
+        path: cfg.path,
+        action: 'error',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return results;
 }
 
 // ── Uninstall ────────────────────────────────────────────────────────────────
