@@ -174,6 +174,29 @@ if (update?.updateAvailable) {
 
 Useful for non-blocking version checks at MCP server startup. Default timeout is 3 seconds.
 
+### `repin(entry: McpServerEntry, options?): RepinResult[]`
+
+Non-interactive re-pin of an **already-installed** server entry to new `command`/`args`, in every client config where it is currently registered (discovered via `list()`). Pairs with `checkForUpdate` to implement an explicit `upgrade` command: pin the spawn to an exact version, then re-pin to the newest version on demand.
+
+Only configs that already contain `entry.name` are touched — `repin` never registers the server somewhere new. Per-client `entryDefaults` are re-applied. `options.configs` lets you inject configs (e.g. in tests) instead of reading from disk.
+
+```typescript
+import { checkForUpdate, repin } from '@kunobi/mcp-installer';
+
+const update = await checkForUpdate('@my-org/mcp', current);
+if (update?.updateAvailable) {
+  const results = repin({
+    name: 'my-server',
+    command: 'npx',
+    args: ['-y', `@my-org/mcp@${update.latest}`],
+  });
+  // results: [{ client, scope, path, action: 'updated' | 'error', error? }, ...]
+  // Restart the client to load the new version.
+}
+```
+
+`options`: `{ cwd?: string; configs?: ClientConfig[] }`.
+
 ### `CLIENTS`
 
 The client registry is exported for advanced use cases:
